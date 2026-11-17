@@ -1971,57 +1971,68 @@ fn composer(app: &mut App, ui: &mut egui::Ui, chat: &Chat, review_send: Option<b
                                 if !response.secondary_clicked() && egui::Popup::position_of_id(ui.ctx(), menu_id).is_none() {
                                     menu = menu.at_position(response.rect.left_bottom());
                                 }
-                                let cursor = output
-                                    .state
-                                    .cursor
-                                    .char_range()
-                                    .map(|range| range.primary.index.0)
-                                    .unwrap_or(0);
-                                let cursor_byte = app
-                                    .composer
-                                    .char_indices()
-                                    .nth(cursor)
-                                    .map_or(app.composer.len(), |(byte, _)| byte);
-                                let byte_at = |at| {
-                                    app.composer
+                                let menu_open = keyboard_menu
+                                    || response.secondary_clicked()
+                                    || egui::Popup::is_id_open(ui.ctx(), menu_id);
+                                let spellcheck_word = if menu_open {
+                                    let cursor = output
+                                        .state
+                                        .cursor
+                                        .char_range()
+                                        .map(|range| range.primary.index.0)
+                                        .unwrap_or(0);
+                                    let cursor_byte = app
+                                        .composer
                                         .char_indices()
-                                        .nth(at)
-                                        .map_or(app.composer.len(), |(byte, _)| byte)
-                                };
-                                let spellcheck_word = match output
-                                    .state
-                                    .cursor
-                                    .char_range()
-                                    .map(|range| range.as_sorted_char_range())
-                                {
-                                    Some(selection) if selection.start.0 != selection.end.0 => {
-                                        let (start, end) =
-                                            (byte_at(selection.start.0), byte_at(selection.end.0));
-                                        misspelled
-                                            .iter()
-                                            .find(|word| word.start == start && word.end == end)
-                                            .cloned()
-                                    }
-                                    _ => misspelled
-                                        .iter()
-                                        .find(|word| {
-                                            cursor_byte >= word.start && cursor_byte < word.end
-                                        })
-                                        .cloned()
-                                        .or_else(|| {
+                                        .nth(cursor)
+                                        .map_or(app.composer.len(), |(byte, _)| byte);
+                                    let byte_at = |at| {
+                                        app.composer
+                                            .char_indices()
+                                            .nth(at)
+                                            .map_or(app.composer.len(), |(byte, _)| byte)
+                                    };
+                                    match output
+                                        .state
+                                        .cursor
+                                        .char_range()
+                                        .map(|range| range.as_sorted_char_range())
+                                    {
+                                        Some(selection) if selection.start.0 != selection.end.0 => {
+                                            let (start, end) = (
+                                                byte_at(selection.start.0),
+                                                byte_at(selection.end.0),
+                                            );
                                             misspelled
                                                 .iter()
-                                                .find(|word| cursor_byte == word.end)
+                                                .find(|word| {
+                                                    word.start == start && word.end == end
+                                                })
                                                 .cloned()
-                                        }),
-                                }
-                                .map(|range| {
-                                    let (start, end) =
-                                        composer_char_range(&app.composer, &range);
-                                    let word = app.composer[range].to_owned();
-                                    let suggestions = app.spellcheck.suggest(&word);
-                                    (start, end, word, suggestions)
-                                });
+                                        }
+                                        _ => misspelled
+                                            .iter()
+                                            .find(|word| {
+                                                cursor_byte >= word.start && cursor_byte < word.end
+                                            })
+                                            .cloned()
+                                            .or_else(|| {
+                                                misspelled
+                                                    .iter()
+                                                    .find(|word| cursor_byte == word.end)
+                                                    .cloned()
+                                            }),
+                                    }
+                                    .map(|range| {
+                                        let (start, end) =
+                                            composer_char_range(&app.composer, &range);
+                                        let word = app.composer[range].to_owned();
+                                        let suggestions = app.spellcheck.suggest(&word);
+                                        (start, end, word, suggestions)
+                                    })
+                                } else {
+                                    None
+                                };
                                 let mut first_item = None;
                                 let shown_menu = menu.show(|ui| {
                                     use crate::model::ComposerFormat;

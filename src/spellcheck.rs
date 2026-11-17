@@ -63,7 +63,9 @@ impl SpellCheck {
         let Some(tag) = self.tag.clone() else {
             return;
         };
-        self.error = None;
+        if self.error.is_some() {
+            return;
+        }
         match spellkit::Checker::with_locale(&tag) {
             Ok(checker) => self.engine = Some(Box::new(checker)),
             Err(error) => {
