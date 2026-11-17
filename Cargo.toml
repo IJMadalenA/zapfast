@@ -106,6 +106,8 @@ ureq = { version = "3", default-features = false, features = ["rustls", "socks-p
 jiff = "0.2"
 # Treats joined emoji as one grapheme. Already included through egui.
 unicode-segmentation = "1"
+# Native spell checking: NSSpellChecker, ISpellChecker, or system Hunspell.
+spellkit = "0.4"
 # Unicode bidi properties; already included through URL/IDNA handling.
 icu_properties = "2.3"
 # Unicode Bidirectional Algorithm for mixed Hebrew, Arabic, and Latin text.

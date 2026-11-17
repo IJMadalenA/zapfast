@@ -487,6 +487,8 @@ pub struct App {
     /// on screen, and a chat's picture keeps one file name across changes.
     stale_images: Vec<String>,
     pub composer: String,
+    /// The composer's platform spell checker.
+    pub spellcheck: crate::spellcheck::SpellCheck,
     composer_mentions: Vec<ComposerMention>,
     /// The link preview above the composer.
     pub composer_preview: Option<ComposerPreview>,
@@ -1561,6 +1563,7 @@ impl App {
                 _ => Palette::dark(),
             });
         let locale = crate::i18n::resolve(settings.interface_language);
+        let spellcheck_tag = settings.spellcheck.tag(locale);
         // With a password set, ZapFast starts locked.
         let app_lock = crate::app_lock::AppLock::new(settings.app_lock_hash.is_some());
         let tray_lockable = settings.app_lock_hash.is_some();
@@ -1588,6 +1591,7 @@ impl App {
             scroll_chats_to_top: false,
             stale_images: Vec::new(),
             composer: String::new(),
+            spellcheck: crate::spellcheck::SpellCheck::new(spellcheck_tag),
             composer_mentions: Vec::new(),
             composer_preview: None,
             preview_typed_at: None,
@@ -8948,6 +8952,20 @@ impl App {
             Action::FormatComposer { format, start, end } => {
                 self.format_composer(ctx, format, start, end);
             }
+            Action::ReplaceComposerWord { start, end, word } => {
+                self.replace_composer_word(ctx, start, end, &word);
+            }
+            Action::AddSpellcheckWord(word) => {
+                self.add_spellcheck_word(&word);
+            }
+            Action::IgnoreSpellcheckWord(word) => {
+                self.spellcheck.ignore(&word);
+            }
+            Action::SetSpellcheck(choice) => {
+                self.settings.spellcheck = choice;
+                self.mark_settings_dirty();
+                self.spellcheck.set_tag(choice.tag(self.locale));
+            }
             Action::SearchGifs(query) => {
                 self.gif_query = query.trim().to_owned();
                 self.gif_results.clear();
@@ -9655,6 +9673,8 @@ impl App {
             Action::SetInterfaceLanguage(choice) => {
                 self.settings.interface_language = choice;
                 self.locale = crate::i18n::resolve(choice);
+                self.spellcheck
+                    .set_tag(self.settings.spellcheck.tag(self.locale));
                 self.mark_settings_dirty();
             }
             Action::SetCustomTheme(filename) => {
@@ -11567,6 +11587,61 @@ impl App {
         self.emoji_start = None;
         self.mention_start = None;
         self.focus_composer = true;
+    }
+
+    /// Replaces one composer word with a spelling suggestion, keeping undo.
+    fn replace_composer_word(&mut self, ctx: &egui::Context, start: usize, end: usize, word: &str) {
+        if self.open_chat.is_none()
+            || self.current_chat().is_some_and(|chat| !chat.can_send())
+            || start >= end
+            || end > self.composer.chars().count()
+        {
+            return;
+        }
+        let byte = |at| {
+            self.composer
+                .char_indices()
+                .nth(at)
+                .map_or(self.composer.len(), |(byte, _)| byte)
+        };
+        let (from, to) = (byte(start), byte(end));
+        if from >= to {
+            return;
+        }
+        let id = egui::Id::new("composer-text");
+        let mut state = egui::TextEdit::load_state(ctx, id).unwrap_or_default();
+        let original = egui::text::CCursorRange::two(
+            egui::text::CCursor::new(start),
+            egui::text::CCursor::new(end),
+        );
+        let mut undo = state.undoer();
+        undo.add_undo(&(original, self.composer.clone()));
+        self.composer.replace_range(from..to, word);
+        let at = start + word.chars().count();
+        let range = egui::text::CCursorRange::one(egui::text::CCursor::new(at));
+        undo.feed_state(
+            ctx.input(|input| input.time),
+            &(range, self.composer.clone()),
+        );
+        state.set_undoer(undo);
+        state.cursor.set_char_range(Some(range));
+        egui::TextEdit::store_state(ctx, id, state);
+        ctx.memory_mut(|memory| memory.request_focus(id));
+        self.spellcheck.invalidate();
+        self.emoji_start = None;
+        self.mention_start = None;
+        self.focus_composer = true;
+    }
+
+    /// Adds a word to the personal spelling dictionary.
+    fn add_spellcheck_word(&mut self, word: &str) {
+        let word = word.trim().to_lowercase();
+        if word.is_empty() || self.settings.spellcheck_words.contains(&word) {
+            return;
+        }
+        self.settings.spellcheck_words.push(word);
+        self.mark_settings_dirty();
+        self.spellcheck.invalidate();
     }
 
     /// Inserts text at the composer cursor or end.

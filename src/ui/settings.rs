@@ -8,7 +8,7 @@ use crate::app::App;
 use crate::i18n::Locale;
 use crate::model::{Action, Dialog, Page};
 use crate::privacy::{PrivacyChoice, PrivacyKind};
-use crate::settings::{Settings, ThemeChoice, WallpaperColor};
+use crate::settings::{Settings, SpellcheckChoice, ThemeChoice, WallpaperColor};
 use crate::theme::{self, Icon, Palette};
 use crate::wallpaper;
 
@@ -430,6 +430,14 @@ fn sections(app: &App) -> Vec<Section> {
         translated(locale, "Enter sends"),
         keyed(translated(locale, "When off, Ctrl+Enter sends.")),
         |settings| &mut settings.enter_sends,
+    );
+    chats.row(
+        translated(locale, "Spell check"),
+        translated(
+            locale,
+            "Underlines misspelled words in English and Spanish. Right-click a word for suggestions.",
+        ),
+        spellcheck_picker,
     );
     chats.account_toggle(
         translated(locale, "Download files automatically"),
@@ -1232,6 +1240,34 @@ fn language_picker(ui: &mut egui::Ui, app: &mut App) {
             }
         });
     theme::reveal_focus(&response.response);
+}
+
+fn spellcheck_picker(ui: &mut egui::Ui, app: &mut App) {
+    let palette = app.palette;
+    let selected = app.settings.spellcheck;
+    let response = egui::ComboBox::from_id_salt("spellcheck_language")
+        .selected_text(spellcheck_label(selected, app.locale))
+        .width(200.0_f32.min(ui.available_width()))
+        .show_ui(ui, |ui| {
+            for choice in SpellcheckChoice::ALL {
+                let label = spellcheck_label(choice, app.locale);
+                if theme_option(ui, &palette, &label, selected == choice) {
+                    app.actions.push(Action::SetSpellcheck(choice));
+                }
+            }
+        });
+    theme::reveal_focus(&response.response);
+}
+
+fn spellcheck_label(choice: SpellcheckChoice, locale: Locale) -> String {
+    match choice {
+        SpellcheckChoice::Off => crate::i18n::gettext(locale, "Off").into_owned(),
+        SpellcheckChoice::Interface => {
+            crate::i18n::gettext(locale, "Same as interface").into_owned()
+        }
+        SpellcheckChoice::English => Locale::English.label().to_owned(),
+        SpellcheckChoice::Spanish => Locale::Spanish.label().to_owned(),
+    }
 }
 
 /// Wallpaper colour picker and live preview.

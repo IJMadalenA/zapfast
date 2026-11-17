@@ -38,6 +38,35 @@ pub enum ThemeChoice {
     Messages,
 }
 
+/// Which language the composer's spell checker uses.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SpellcheckChoice {
+    Off,
+    #[default]
+    Interface,
+    English,
+    Spanish,
+}
+
+impl SpellcheckChoice {
+    pub const ALL: [Self; 4] = [Self::Off, Self::Interface, Self::English, Self::Spanish];
+
+    /// The Hunspell or BCP 47 tag for the platform checker.
+    pub fn tag(self, interface: crate::i18n::Locale) -> Option<&'static str> {
+        match self {
+            Self::Off => None,
+            Self::Interface => match interface {
+                crate::i18n::Locale::English => Some("en_US"),
+                crate::i18n::Locale::Spanish => Some("es_ES"),
+                _ => None,
+            },
+            Self::English => Some("en_US"),
+            Self::Spanish => Some("es_ES"),
+        }
+    }
+}
+
 impl ThemeChoice {
     /// The choices Settings offers, on every platform. Messages shows the
     /// desktop through its window where the platform can, and is opaque in
@@ -449,6 +478,10 @@ pub struct Settings {
     /// Whether Enter sends. Off, Enter adds a line and Ctrl+Enter (Cmd+Enter
     /// on macOS) sends.
     pub enter_sends: bool,
+    /// Which language the composer's spell checker uses.
+    pub spellcheck: SpellcheckChoice,
+    /// Words the reader added to the personal dictionary, lowercase.
+    pub spellcheck_words: Vec<String>,
     /// Send read receipts, subject to the account privacy setting.
     pub send_read_receipts: bool,
     /// Send typing state while composing.
@@ -567,6 +600,8 @@ impl Default for Settings {
             search_pane_width: 380.0,
             info_pane_width: 380.0,
             enter_sends: true,
+            spellcheck: SpellcheckChoice::Interface,
+            spellcheck_words: Vec::new(),
             send_read_receipts: true,
             send_typing: true,
             auto_download: true,
@@ -1224,6 +1259,22 @@ mod tests {
         assert!(!settings.enter_sends);
         assert!(settings.custom_theme_cache.is_none());
         assert_eq!(settings.custom_theme.as_deref(), Some("mine.json"));
+    }
+
+    #[test]
+    fn spellcheck_defaults_and_round_trips() {
+        let older: Settings = serde_json::from_str(r#"{"theme":"light"}"#).unwrap();
+        assert_eq!(older.spellcheck, SpellcheckChoice::Interface);
+        assert!(older.spellcheck_words.is_empty());
+        let chosen = Settings {
+            spellcheck: SpellcheckChoice::Spanish,
+            spellcheck_words: vec!["zapfast".to_owned()],
+            ..Settings::default()
+        };
+        let saved = serde_json::to_string(&chosen).unwrap();
+        let loaded: Settings = serde_json::from_str(&saved).unwrap();
+        assert_eq!(loaded.spellcheck, SpellcheckChoice::Spanish);
+        assert_eq!(loaded.spellcheck_words, vec!["zapfast".to_owned()]);
     }
 
     #[test]

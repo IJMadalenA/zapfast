@@ -2098,6 +2098,10 @@ pub fn apply_flags(app: &mut App, page: Option<&str>) {
                 );
                 app.composer = "Still typing this one".into();
             }
+            "spellcheck" => {
+                app.composer = "helo wrld, this is a test".into();
+                app.spellcheck.set_tag(Some("en_US"));
+            }
             "motion" => motion_sample(app, false),
             "motion-playing" => motion_sample(app, true),
             "motion-preview" => {
@@ -4494,6 +4498,9 @@ mod tests {
             .unwrap();
         let (mut app, _events) = App::headless(AppDirs::under(root.path()), Settings::default());
         ROOTS.with(|roots| roots.borrow_mut().push(root));
+        // Layout tests do not need a platform dictionary; the spellcheck page
+        // turns it on when it wants one.
+        app.spellcheck.set_tag(None);
         populate(&mut app);
         app
     }
@@ -14713,6 +14720,109 @@ mod tests {
                 assert_eq!(app.composer, "Hi *👋 café*!");
             }
         }
+    }
+
+    /// A misspelled composer word offers the personal dictionary in its menu.
+    #[test]
+    fn composer_spellcheck_menu_adds_a_word_to_the_dictionary() {
+        let mut app = app();
+        let ctx = egui::Context::default();
+        ctx.enable_accesskit();
+        app.attach(&ctx);
+        app.spellcheck.set_tag(Some("en_US"));
+        app.spellcheck.load();
+        if !app.spellcheck.is_active() {
+            return;
+        }
+        app.composer = "helo".into();
+        render(&mut app, &ctx);
+        let id = egui::Id::new("composer-text");
+        ctx.memory_mut(|memory| memory.request_focus(id));
+        render(&mut app, &ctx);
+        let rect = ctx.read_response(id).unwrap().rect;
+        let at = rect.left_top() + egui::vec2(6.0, 6.0);
+        let secondary = |pressed| egui::Event::PointerButton {
+            pos: at,
+            button: egui::PointerButton::Secondary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame_sized(
+            &mut app,
+            &ctx,
+            780.0,
+            vec![egui::Event::PointerMoved(at), secondary(true)],
+        );
+        frame_sized(&mut app, &ctx, 780.0, vec![secondary(false)]);
+        let nodes = accessible_nodes(&mut app, &ctx, vec![]);
+        let add = nodes
+            .iter()
+            .find(|(label, _, _)| label == "Add to dictionary")
+            .expect("Add to dictionary menu item")
+            .2;
+        frame_sized(&mut app, &ctx, 780.0, vec![egui::Event::PointerMoved(add)]);
+        frame_sized(&mut app, &ctx, 780.0, vec![primary(add, true)]);
+        frame_sized(&mut app, &ctx, 780.0, vec![primary(add, false)]);
+        assert_eq!(app.settings.spellcheck_words, vec!["helo".to_owned()]);
+        assert!(
+            app.spellcheck
+                .check("helo", &app.settings.spellcheck_words)
+                .is_empty()
+        );
+    }
+
+    /// A suggestion replaces the word and one Undo puts the draft back.
+    #[test]
+    fn composer_spellcheck_suggestion_replaces_and_undoes() {
+        let mut app = app();
+        let ctx = egui::Context::default();
+        ctx.enable_accesskit();
+        app.attach(&ctx);
+        app.spellcheck.set_tag(Some("en_US"));
+        app.spellcheck.load();
+        if !app.spellcheck.is_active() {
+            return;
+        }
+        let Some(suggestion) = app.spellcheck.suggest("helo").into_iter().next() else {
+            return;
+        };
+        app.composer = "helo".into();
+        render(&mut app, &ctx);
+        let id = egui::Id::new("composer-text");
+        ctx.memory_mut(|memory| memory.request_focus(id));
+        render(&mut app, &ctx);
+        let rect = ctx.read_response(id).unwrap().rect;
+        let at = rect.left_top() + egui::vec2(6.0, 6.0);
+        let secondary = |pressed| egui::Event::PointerButton {
+            pos: at,
+            button: egui::PointerButton::Secondary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame_sized(
+            &mut app,
+            &ctx,
+            780.0,
+            vec![egui::Event::PointerMoved(at), secondary(true)],
+        );
+        frame_sized(&mut app, &ctx, 780.0, vec![secondary(false)]);
+        let nodes = accessible_nodes(&mut app, &ctx, vec![]);
+        let item = nodes
+            .iter()
+            .find(|(label, _, _)| label == &suggestion)
+            .expect("suggestion menu item")
+            .2;
+        frame_sized(&mut app, &ctx, 780.0, vec![egui::Event::PointerMoved(item)]);
+        frame_sized(&mut app, &ctx, 780.0, vec![primary(item, true)]);
+        frame_sized(&mut app, &ctx, 780.0, vec![primary(item, false)]);
+        assert_eq!(app.composer, suggestion);
+        frame_sized(
+            &mut app,
+            &ctx,
+            780.0,
+            vec![key(egui::Key::Z, egui::Modifiers::COMMAND)],
+        );
+        assert_eq!(app.composer, "helo");
     }
 
     /// The GIF tab is the only caller of its animation cache, so closing the

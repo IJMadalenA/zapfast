@@ -1,5 +1,11 @@
 # Third-party notices
 
+## spellkit
+
+ZapFast uses [`spellkit`](https://github.com/rtmongold/spellkit) for native
+spell checking, under the MIT or Apache-2.0 license. Its source and license
+texts are available from that repository and from crates.io.
+
 ## Pidgin notification sounds
 
 `assets/sounds/receive.wav` and `assets/sounds/alert.wav`, built into ZapFast,

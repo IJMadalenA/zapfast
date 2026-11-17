@@ -157,6 +157,14 @@ name or description, in the interface language or in English.
 
 - **Enter sends**: when off, Enter adds a line and `Ctrl+Enter` (Command+Enter
   on macOS) sends.
+- **Spell check**: off, same as the interface, English, or Spanish. It
+  underlines words the system dictionary does not know in the composer.
+  Right-click a word for suggestions, **Add to dictionary**, or **Ignore**.
+  The personal dictionary is shared by every account. Linux uses the system
+  Hunspell dictionary; macOS and Windows use the system spell checker. Install
+  an English or Spanish dictionary if your system has none. **Same as
+  interface** follows English or Spanish and leaves the feature off for other
+  interface languages.
 - **Download files automatically**: attachments up to 64 MiB download as they
   come into view. When off, click one to download it. Visible stickers still
   download automatically. Larger attachments download only when clicked.

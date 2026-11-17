@@ -3154,6 +3154,18 @@ pub enum Action {
         start: usize,
         end: usize,
     },
+    /// Replaces one misspelled composer word with a suggestion.
+    ReplaceComposerWord {
+        start: usize,
+        end: usize,
+        word: String,
+    },
+    /// Adds a word to the personal spelling dictionary.
+    AddSpellcheckWord(String),
+    /// Ignores a word until ZapFast closes.
+    IgnoreSpellcheckWord(String),
+    /// Changes the composer's spell check language.
+    SetSpellcheck(crate::settings::SpellcheckChoice),
     /// Fetches one GIF result's animated preview when its tile shows.
     FetchGifAnimation {
         id: String,

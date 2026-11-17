@@ -1492,6 +1492,29 @@ fn attachment_review(app: &mut App, ui: &mut egui::Ui, chat: &Chat) -> Option<bo
     reviewing_attachments(app, chat).then(|| super::attachment_preview::bar(app, ui))
 }
 
+/// The logical character range covering a byte range in `text`.
+fn composer_char_range(text: &str, range: &std::ops::Range<usize>) -> (usize, usize) {
+    let start = text[..range.start].chars().count();
+    (start, start + text[range.clone()].chars().count())
+}
+
+/// A wavy underline under one row of a misspelled word.
+fn paint_spelling_underline(ui: &egui::Ui, rect: Rect, color: Color32) {
+    let y = rect.bottom() - 1.0;
+    let mut points = Vec::new();
+    let mut x = rect.left();
+    let mut high = false;
+    while x < rect.right() {
+        points.push(pos2(x, y + if high { 0.0 } else { 1.0 }));
+        x += 2.0;
+        high = !high;
+    }
+    if points.len() >= 2 {
+        ui.painter()
+            .add(egui::Shape::line(points, Stroke::new(1.0, color)));
+    }
+}
+
 /// Draws the composer and queues sends with the originating account and selected mentions.
 fn composer(app: &mut App, ui: &mut egui::Ui, chat: &Chat, review_send: Option<bool>) {
     let palette = app.palette;
@@ -1876,6 +1899,18 @@ fn composer(app: &mut App, ui: &mut egui::Ui, chat: &Chat, review_send: Option<b
                                     output.cursor_range = Some(range);
                                     egui::TextEdit::store_state(ui.ctx(), id, output.state.clone());
                                 }
+                                let misspelled = app
+                                    .spellcheck
+                                    .check(&app.composer, &app.settings.spellcheck_words);
+                                for range in &misspelled {
+                                    let (start, end) = composer_char_range(&app.composer, range);
+                                    for (_, bounds) in
+                                        crate::bidi::char_bounds_by_row(&output.galley, start, end)
+                                    {
+                                        let rect = bounds.translate(output.galley_pos.to_vec2());
+                                        paint_spelling_underline(ui, rect, palette.danger);
+                                    }
+                                }
                                 for (start, length, cluster) in &clusters {
                                     let Some(bounds) = crate::bidi::char_bounds(
                                         &output.galley,
@@ -1936,11 +1971,94 @@ fn composer(app: &mut App, ui: &mut egui::Ui, chat: &Chat, review_send: Option<b
                                 if !response.secondary_clicked() && egui::Popup::position_of_id(ui.ctx(), menu_id).is_none() {
                                     menu = menu.at_position(response.rect.left_bottom());
                                 }
+                                let cursor = output
+                                    .state
+                                    .cursor
+                                    .char_range()
+                                    .map(|range| range.primary.index.0)
+                                    .unwrap_or(0);
+                                let cursor_byte = app
+                                    .composer
+                                    .char_indices()
+                                    .nth(cursor)
+                                    .map_or(app.composer.len(), |(byte, _)| byte);
+                                let byte_at = |at| {
+                                    app.composer
+                                        .char_indices()
+                                        .nth(at)
+                                        .map_or(app.composer.len(), |(byte, _)| byte)
+                                };
+                                let spellcheck_word = match output
+                                    .state
+                                    .cursor
+                                    .char_range()
+                                    .map(|range| range.as_sorted_char_range())
+                                {
+                                    Some(selection) if selection.start.0 != selection.end.0 => {
+                                        let (start, end) =
+                                            (byte_at(selection.start.0), byte_at(selection.end.0));
+                                        misspelled
+                                            .iter()
+                                            .find(|word| word.start == start && word.end == end)
+                                            .cloned()
+                                    }
+                                    _ => misspelled
+                                        .iter()
+                                        .find(|word| {
+                                            cursor_byte >= word.start && cursor_byte < word.end
+                                        })
+                                        .cloned()
+                                        .or_else(|| {
+                                            misspelled
+                                                .iter()
+                                                .find(|word| cursor_byte == word.end)
+                                                .cloned()
+                                        }),
+                                }
+                                .map(|range| {
+                                    let (start, end) =
+                                        composer_char_range(&app.composer, &range);
+                                    let word = app.composer[range].to_owned();
+                                    let suggestions = app.spellcheck.suggest(&word);
+                                    (start, end, word, suggestions)
+                                });
                                 let mut first_item = None;
                                 let shown_menu = menu.show(|ui| {
                                     use crate::model::ComposerFormat;
                                     let range = output.state.cursor.char_range().map(|range| range.as_sorted_char_range());
                                     let selected = range.as_ref().is_some_and(|range| !range.is_empty());
+                                    if let Some((start, end, word, suggestions)) = spellcheck_word.clone() {
+                                        if suggestions.is_empty() {
+                                            let none = crate::i18n::gettext(app.locale, "No suggestions");
+                                            ui.add_enabled(false, egui::Button::new(none));
+                                        } else {
+                                            for suggestion in &suggestions {
+                                                let button = ui.button(suggestion);
+                                                if first_item.is_none() && ui.is_visible() {
+                                                    first_item = Some(button.id);
+                                                }
+                                                if button.clicked() {
+                                                    app.actions.push(Action::ReplaceComposerWord {
+                                                        start,
+                                                        end,
+                                                        word: suggestion.clone(),
+                                                    });
+                                                    ui.close();
+                                                }
+                                            }
+                                        }
+                                        let add = crate::i18n::gettext(app.locale, "Add to dictionary");
+                                        if ui.button(add).clicked() {
+                                            app.actions.push(Action::AddSpellcheckWord(word.clone()));
+                                            ui.close();
+                                        }
+                                        let ignore = crate::i18n::gettext(app.locale, "Ignore");
+                                        if ui.button(ignore).clicked() {
+                                            app.actions.push(Action::IgnoreSpellcheckWord(word));
+                                            ui.close();
+                                        }
+                                        ui.separator();
+                                    }
                                     ui.add_enabled_ui(selected, |ui| {
                                         for (format, label) in [
                                             (ComposerFormat::Bold, crate::i18n::gettext(app.locale, "Bold")),
@@ -1949,7 +2067,10 @@ fn composer(app: &mut App, ui: &mut egui::Ui, chat: &Chat, review_send: Option<b
                                             (ComposerFormat::Monospace, crate::i18n::gettext(app.locale, "Monospace")),
                                         ] {
                                             let button = ui.button(label);
-                                            if format == ComposerFormat::Bold && ui.is_visible() {
+                                            if first_item.is_none()
+                                                && format == ComposerFormat::Bold
+                                                && ui.is_visible()
+                                            {
                                                 first_item = Some(button.id);
                                             }
                                             if button.clicked() {

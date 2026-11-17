@@ -29,6 +29,14 @@ the composer and right-click (or press Shift+F10 while it is focused) for
 **Monospace**. Spaces at the edges of the selection stay outside the markers,
 and bold, italic and strikethrough mark each selected line. Formatting keeps
 the text selected and can be undone.
+With **Spell check** on in **Settings > Chats**, ZapFast underlines words its
+English or Spanish dictionary does not know. Right-click an underlined word, or
+press Shift+F10 with the cursor in it, for up to five suggestions, **Add to
+dictionary**, or **Ignore** for this session. The personal dictionary is shared
+by every account and saved with your settings. Spell check uses the dictionary
+your operating system provides; install an English or Spanish dictionary if
+your system has none. **Same as interface** follows English or Spanish, and
+leaves the feature off for every other interface language.
 A line beginning with `> ` (greater-than and a space) is a block quote.
 Without the space, text such as `>.<` stays literal.
 Paste text with Ctrl+V (Command+V on macOS) or Shift+Insert, as in other
