@@ -7,10 +7,10 @@ arch=('x86_64' 'aarch64')
 url="https://zapfast.rocks"
 license=('MIT' 'GPL-2.0-only')
 install="${pkgname}.install"
-# Nothing beyond libc is linked directly; winit and glutin dlopen these at
-# startup, and this is a GUI-only application, so all of them have to be
-# there for it to run at all.
-depends=('alsa-lib' 'libpipewire' 'libglvnd' 'libxkbcommon' 'libxkbcommon-x11' 'wayland' 'libx11' 'libxcb' 'libxcursor' 'libxi' 'libxrandr')
+# Winit and glutin dlopen these at startup; Hunspell is linked directly. This
+# is a GUI-only application, so all of them have to be there for it to run at
+# all.
+depends=('alsa-lib' 'libpipewire' 'libglvnd' 'libxkbcommon' 'libxkbcommon-x11' 'wayland' 'libx11' 'libxcb' 'libxcursor' 'libxi' 'libxrandr' 'hunspell')
 optdepends=('org.freedesktop.secrets: archive encryption key storage'
             'noto-fonts-emoji: colour emoji in messages and reactions'
             'xdg-desktop-portal: the file picker for attachments')

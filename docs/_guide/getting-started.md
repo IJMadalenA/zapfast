@@ -40,17 +40,21 @@ output's bindings are generated at build time). libopus and the H.264 decoder
 build from source. On Arch Linux:
 
 ```sh
-sudo pacman -S --needed alsa-lib pipewire clang libxkbcommon wayland cmake perl
+sudo pacman -S --needed alsa-lib pipewire hunspell clang libxkbcommon wayland cmake perl
 ```
 
 On Debian 13, Ubuntu 24.04 or newer:
 
 ```sh
-sudo apt install build-essential cmake perl clang libclang-dev libasound2-dev libpipewire-0.3-dev libxkbcommon-dev libwayland-dev libgl1-mesa-dev
+sudo apt install build-essential cmake perl clang libclang-dev libasound2-dev libpipewire-0.3-dev libhunspell-dev libxkbcommon-dev libwayland-dev libgl1-mesa-dev
 ```
 
 With Nix, `nix develop` provides the toolchain and every native dependency,
 and `nix run .#zapfast` builds and runs it.
+
+Spell check also needs an English or Spanish dictionary. On Arch install
+`hunspell-en_us` or `hunspell-es`; on Debian or Ubuntu install
+`hunspell-en-us` or `hunspell-es`.
 
 The packaged desktop entry is `packaging/applications/zapfast.desktop`;
 `packaging/install-user.sh` derives the user copy above from it.

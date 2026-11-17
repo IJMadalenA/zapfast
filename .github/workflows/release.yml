@@ -81,7 +81,7 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             ca-certificates curl git build-essential pkg-config \
             libxkbcommon-dev libwayland-dev libgl1-mesa-dev libasound2-dev \
-            libpipewire-0.3-dev clang libclang-dev cmake perl
+            libpipewire-0.3-dev libhunspell-dev clang libclang-dev cmake perl
       - uses: actions/checkout@v7
       - name: Check release version
         shell: bash

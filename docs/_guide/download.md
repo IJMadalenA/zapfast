@@ -134,10 +134,12 @@ the new file when {{ app }} says a release is out.
 
 {{ app }} needs glibc 2.36 or newer (Debian 12, Ubuntu 22.10, Fedora 37 and
 newer), the standard egui libraries, ALSA and libpipewire 0.3.53 or newer:
-`libglvnd`, `libxkbcommon`, `wayland`, `libx11`, `alsa-lib` and `libpipewire` (on
-Debian or Ubuntu: `libasound2t64`, `libpipewire-0.3-0t64`, `libgl1`,
-`libxkbcommon0`, `libwayland-client0`). Sound goes to PipeWire itself, else to
-PulseAudio, else to ALSA.
+`libglvnd`, `libxkbcommon`, `wayland`, `libx11`, `alsa-lib`, `libpipewire` and
+`hunspell` (on Debian or Ubuntu: `libasound2t64`, `libpipewire-0.3-0t64`,
+`libgl1`, `libxkbcommon0`, `libwayland-client0`, `libhunspell-1.7-0`). Sound
+goes to PipeWire itself, else to PulseAudio, else to ALSA. Spell check also
+needs an English or Spanish Hunspell dictionary, such as `hunspell-en-us` or
+`hunspell-es`.
 Emoji come from the desktop's colour emoji font when one is installed
 (`noto-fonts-emoji`, `fonts-noto-color-emoji` on Debian), else from the copy
 {{ app }} bundles. The file picker uses `xdg-desktop-portal`.

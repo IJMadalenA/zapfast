@@ -17,6 +17,9 @@ libraries:
   libpipewire-0.3.so.0:
     deb: libpipewire-0.3-0t64 | libpipewire-0.3-0
     rpm: libpipewire-0.3.so.0()(64bit)
+  libhunspell-1.7.so.0:
+    deb: libhunspell-1.7-0
+    rpm: libhunspell-1.7.so.0()(64bit)
   libgcc_s.so.1:
     deb: libgcc-s1
     rpm: libgcc_s.so.1()(64bit)

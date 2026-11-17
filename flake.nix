@@ -59,6 +59,7 @@
                 ++ lib.optionals isLinux [
                   alsa-lib
                   pipewire
+                  hunspell
                   # The PipeWire output's bindings are made by bindgen,
                   # which needs libclang.
                   rustPlatform.bindgenHook
@@ -108,6 +109,7 @@
             libxcursor
             libxi
             libxrandr
+            hunspell
           ];
           zapfast = rustPlatform.buildRustPackage rec {
             pname = "zapfast";
@@ -148,6 +150,7 @@
                 pipewire
                 libGL
                 libx11
+                hunspell
               ]
             );
             ZAPFAST_TEST_RTL_FONT = "${pkgs.dejavu_fonts}/share/fonts/truetype/DejaVuSans.ttf";

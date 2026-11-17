@@ -26,6 +26,7 @@ BuildRequires:  clang-devel
 BuildRequires:  gcc-c++
 BuildRequires:  perl
 BuildRequires:  pkgconfig(alsa)
+BuildRequires:  pkgconfig(hunspell)
 BuildRequires:  pkgconfig(libpipewire-0.3)
 # ZapFast opens these libraries while running (OpenGL, the window system and
 # the keyboard), so rpmbuild cannot see them. They are required by library
@@ -44,6 +45,7 @@ Requires:       libX11-xcb.so.1()(64bit)
 Requires:       libXcursor.so.1()(64bit)
 Requires:       libXi.so.6()(64bit)
 Requires:       libXrandr.so.2()(64bit)
+Requires:       libhunspell-1.7.so.0()(64bit)
 Recommends:     google-noto-color-emoji-fonts
 Recommends:     xdg-desktop-portal
 Provides:       fastsapp = %{version}-%{release}

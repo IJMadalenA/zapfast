@@ -6,6 +6,14 @@ ZapFast uses [`spellkit`](https://github.com/rtmongold/spellkit) for native
 spell checking, under the MIT or Apache-2.0 license. Its source and license
 texts are available from that repository and from crates.io.
 
+## Hunspell
+
+On Linux, ZapFast links the system Hunspell library
+(<https://hunspell.github.io>), distributed under the GNU Lesser General
+Public License, version 2.1 or later, the Mozilla Public License 1.1, or the
+GNU General Public License, version 2.0. Its source and license texts are
+available from <https://github.com/hunspell/hunspell>.
+
 ## Pidgin notification sounds
 
 `assets/sounds/receive.wav` and `assets/sounds/alert.wav`, built into ZapFast,

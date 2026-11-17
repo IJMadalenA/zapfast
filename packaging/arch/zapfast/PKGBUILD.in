@@ -7,7 +7,7 @@ arch=('x86_64' 'aarch64')
 url="https://zapfast.rocks"
 license=('MIT' 'GPL-2.0-only')
 install="${pkgname}.install"
-depends=('alsa-lib' 'libpipewire' 'libglvnd' 'libxkbcommon' 'libxkbcommon-x11' 'wayland' 'libx11' 'libxcb' 'libxcursor' 'libxi' 'libxrandr')
+depends=('alsa-lib' 'libpipewire' 'libglvnd' 'libxkbcommon' 'libxkbcommon-x11' 'wayland' 'libx11' 'libxcb' 'libxcursor' 'libxi' 'libxrandr' 'hunspell')
 makedepends=('cargo' 'cmake' 'perl' 'clang')
 # The right-to-left layout tests need one of the fonts they look for.
 checkdepends=('ttf-liberation')

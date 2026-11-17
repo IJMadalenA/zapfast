@@ -98,9 +98,12 @@ onwards. Ubuntu 22.04 is not supported: its libpipewire is older than the
 0.3.53 fastframe-audio's PipeWire output builds against. native-packages derives the `libc6`/`glibc` floor from the binary; do
 not declare one. DEB/RPM recipes declare runtime-loaded Wayland, X11 and EGL
 libraries as well as ALSA (`libasound2t64 | libasound2`, the package's name
-before and after the 64-bit time transition) and libpipewire
-(`libpipewire-0.3-0t64 | libpipewire-0.3-0`, `pipewire-libs`). Sound goes to
-PipeWire or PulseAudio directly, so ALSA's PulseAudio plugin is not needed.
+before and after the 64-bit time transition), libpipewire
+(`libpipewire-0.3-0t64 | libpipewire-0.3-0`, `pipewire-libs`), and Hunspell
+(`libhunspell-1.7-0`, `hunspell`). Sound goes to PipeWire or PulseAudio
+directly, so ALSA's PulseAudio plugin is not needed. Spell check also needs a
+dictionary at runtime, such as `hunspell-en-us` or `hunspell-es`; do not make
+one a hard dependency.
 Packaging CI builds both architectures from the published v0.13.1 fixture on
 PRs; release runs use their own tag. Clean Ubuntu, Debian and Fedora containers
 install and remove each package, check GUI libraries loaded with `dlopen`, and
