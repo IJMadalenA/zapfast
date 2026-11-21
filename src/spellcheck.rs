@@ -31,6 +31,7 @@ pub struct SpellCheck {
     text: String,
     personal: Vec<String>,
     misspelled: Vec<Range<usize>>,
+    suggested: Option<(String, Vec<String>)>,
     error: Option<String>,
 }
 
@@ -105,8 +106,14 @@ impl SpellCheck {
         self.misspelled.clone()
     }
 
-    /// Up to five suggestions, without duplicates or the word itself.
-    pub fn suggest(&self, word: &str) -> Vec<String> {
+    /// Up to five suggestions, without duplicates or the word itself. Cached
+    /// because the context menu asks on every frame it stays open.
+    pub fn suggest(&mut self, word: &str) -> Vec<String> {
+        if let Some((known, suggestions)) = &self.suggested
+            && known == word
+        {
+            return suggestions.clone();
+        }
         let Some(engine) = &self.engine else {
             return Vec::new();
         };
@@ -122,6 +129,7 @@ impl SpellCheck {
                 break;
             }
         }
+        self.suggested = Some((word.to_owned(), suggestions.clone()));
         suggestions
     }
 
@@ -137,6 +145,7 @@ impl SpellCheck {
         self.text.clear();
         self.personal.clear();
         self.misspelled.clear();
+        self.suggested = None;
     }
 
     /// Whether a platform dictionary is loaded.
@@ -315,7 +324,7 @@ mod tests {
 
     #[test]
     fn suggest_deduplicates_and_limits_to_five() {
-        let spell = spell(
+        let mut spell = spell(
             Vec::new(),
             vec![
                 "hello".to_owned(),
